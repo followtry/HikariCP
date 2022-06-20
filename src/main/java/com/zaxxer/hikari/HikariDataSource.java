@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.zaxxer.hikari.pool.HikariPool.POOL_NORMAL;
 
 /**
+ * 数据源连接池主类
+ *
  * The HikariCP pooled DataSource.
  *
  * @author Brett Wooldridge
@@ -41,6 +43,7 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
 {
    private static final Logger LOGGER = LoggerFactory.getLogger(HikariDataSource.class);
 
+   //判断连接池是否关闭
    private final AtomicBoolean isShutdown = new AtomicBoolean();
 
    private final HikariPool fastPathPool;
@@ -88,7 +91,9 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
    //                          DataSource methods
    // ***********************************************************************
 
-   /** {@inheritDoc} */
+   /**
+    * 获取连接
+    * {@inheritDoc} */
    @Override
    public Connection getConnection() throws SQLException
    {
@@ -101,6 +106,7 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
       }
 
       // See http://en.wikipedia.org/wiki/Double-checked_locking#Usage_in_Java
+      //如果连接池不存在，使用double check锁来创建连接池
       HikariPool result = pool;
       if (result == null) {
          synchronized (this) {
@@ -233,6 +239,7 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
    @Override
    public void setMetricRegistry(Object metricRegistry)
    {
+      //获取并设置metric的注册器
       var isAlreadySet = getMetricRegistry() != null;
       super.setMetricRegistry(metricRegistry);
 
@@ -320,6 +327,7 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
    }
 
    /**
+    * 销毁连接池
     * Evict a connection from the pool.  If the connection has already been closed (returned to the pool)
     * this may result in a "soft" eviction; the connection will be evicted sometime in the future if it is
     * currently in use.  If the connection has not been closed, the eviction is immediate.
@@ -335,6 +343,7 @@ public class HikariDataSource extends HikariConfig implements DataSource, Closea
    }
 
    /**
+    * 关闭数据源和连接池
     * Shutdown the DataSource and its associated pool.
     */
    @Override

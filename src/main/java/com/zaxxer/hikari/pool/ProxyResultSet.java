@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
+ * 代理的返回结果
  * This is the proxy class for java.sql.ResultSet.
  *
  * @author Brett Wooldridge

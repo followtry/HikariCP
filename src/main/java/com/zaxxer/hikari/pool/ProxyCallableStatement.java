@@ -19,6 +19,7 @@ package com.zaxxer.hikari.pool;
 import java.sql.CallableStatement;
 
 /**
+ * 代理的CallableStatement，基于ProxyPreparedStatement
  * This is the proxy class for java.sql.CallableStatement.
  *
  * @author Brett Wooldridge

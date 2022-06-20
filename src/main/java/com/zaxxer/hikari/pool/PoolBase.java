@@ -48,6 +48,7 @@ import static com.zaxxer.hikari.util.UtilityElf.createInstance;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/*连接池的基类*/
 abstract class PoolBase
 {
    private final Logger logger = LoggerFactory.getLogger(PoolBase.class);
@@ -55,12 +56,15 @@ abstract class PoolBase
    public final HikariConfig config;
    IMetricsTrackerDelegate metricsTracker;
 
+   /*连接池的名称*/
    protected final String poolName;
 
    volatile String catalog;
    final AtomicReference<Exception> lastConnectionFailure;
 
+   /*连接超时时间*/
    long connectionTimeout;
+   /*校验超时时间*/
    long validationTimeout;
 
    SQLExceptionOverride exceptionOverride;
@@ -75,7 +79,9 @@ abstract class PoolBase
    private int isQueryTimeoutSupported;
    private int defaultTransactionIsolation;
    private int transactionIsolation;
+   /*网络超时执行线程池*/
    private Executor netTimeoutExecutor;
+   /*jdbc数据源*/
    private DataSource dataSource;
 
    private final String schema;
@@ -109,6 +115,7 @@ abstract class PoolBase
       this.validationTimeout = config.getValidationTimeout();
       this.lastConnectionFailure = new AtomicReference<>();
 
+      /*初始化真实的数据库驱动层面的数据源*/
       initializeDataSource();
    }
 
@@ -306,6 +313,7 @@ abstract class PoolBase
    // ***********************************************************************
 
    /**
+    * 创建或初始化最根本的底层数据源
     * Create/initialize the underlying DataSource.
     */
    private void initializeDataSource()
@@ -324,6 +332,7 @@ abstract class PoolBase
          PropertyElf.setTargetFromProperties(ds, dataSourceProperties);
       }
       else if (jdbcUrl != null && ds == null) {
+         /*创建新的底层数据源，内包含了MySQL等数据库的驱动，数据库驱动根据driverClassName获取到*/
          ds = new DriverDataSource(jdbcUrl, driverClassName, dataSourceProperties, username, password);
       }
       else if (dataSourceJNDI != null && ds == null) {
@@ -344,6 +353,7 @@ abstract class PoolBase
    }
 
    /**
+    * 从数据源中获取新的连接
     * Obtain connection from data source.
     *
     * @return a Connection connection
@@ -357,6 +367,7 @@ abstract class PoolBase
          var username = config.getUsername();
          var password = config.getPassword();
 
+         /*通过DataSource建立数据库的连接*/
          connection = (username == null) ? dataSource.getConnection() : dataSource.getConnection(username, password);
          if (connection == null) {
             throw new SQLTransientConnectionException("DataSource returned null unexpectedly");
@@ -549,6 +560,7 @@ abstract class PoolBase
    }
 
    /**
+    * 将超时时间设置到驱动里的网络超时中
     * Set the network timeout, if <code>isUseNetworkTimeout</code> is <code>true</code> and the
     * driver supports it.
     *
@@ -609,6 +621,7 @@ abstract class PoolBase
    }
 
    /**
+    * 设置数据源的登录超时时间
     * Set the loginTimeout on the specified DataSource.
     *
     * @param dataSource the DataSource

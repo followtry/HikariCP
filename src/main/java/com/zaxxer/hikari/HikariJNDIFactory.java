@@ -25,6 +25,8 @@ import java.util.Hashtable;
 import java.util.Properties;
 
 /**
+ * JNDI工厂
+ *
  * A JNDI factory that produces HikariDataSource instances.
  *
  * @author Brett Wooldridge

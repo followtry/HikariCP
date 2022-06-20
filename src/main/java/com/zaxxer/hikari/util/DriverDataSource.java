@@ -73,6 +73,7 @@ public final class DriverDataSource implements DataSource
             try {
                if (threadContextClassLoader != null) {
                   try {
+                     /*根据指定的驱动类名加载驱动*/
                      driverClass = threadContextClassLoader.loadClass(driverClassName);
                      LOGGER.debug("Driver class {} found in Thread context class loader {}", driverClassName, threadContextClassLoader);
                   }
@@ -92,6 +93,7 @@ public final class DriverDataSource implements DataSource
 
             if (driverClass != null) {
                try {
+                  /*并将驱动设置为当前类的driver*/
                   driver = (Driver) driverClass.getDeclaredConstructor().newInstance();
                } catch (Exception e) {
                   LOGGER.warn("Failed to create instance of driver class {}, trying jdbcUrl resolution", driverClassName, e);

@@ -19,6 +19,8 @@ package com.zaxxer.hikari.pool;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
+ * 任务调度工厂
+ *
  * A factory for {@link ProxyLeakTask} Runnables that are scheduled in the future to report leaks.
  *
  * @author Brett Wooldridge

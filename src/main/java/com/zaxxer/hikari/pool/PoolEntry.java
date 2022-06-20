@@ -30,6 +30,7 @@ import static com.zaxxer.hikari.util.ClockSource.*;
 import static com.zaxxer.hikari.util.ClockSource.currentTime;
 
 /**
+ * 连接的实例对象
  * Entry used in the ConcurrentBag to track Connection instances.
  *
  * @author Brett Wooldridge
@@ -78,6 +79,7 @@ final class PoolEntry implements IConcurrentBagEntry
    {
       if (connection != null) {
          this.lastAccessed = currentTime();
+         /*将当前的poolEntry继续放在连接池中复用*/
          hikariPool.recycle(this);
       }
    }

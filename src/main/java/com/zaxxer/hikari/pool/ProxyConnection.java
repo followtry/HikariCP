@@ -238,10 +238,12 @@ public abstract class ProxyConnection implements Connection
    @Override
    public final void close() throws SQLException
    {
+      /*将缓存的Statement清理掉*/
       // Closing statements can cause connection eviction, so this must run before the conditional below
       closeStatements();
 
       if (delegate != ClosedConnection.CLOSED_CONNECTION) {
+         /*将代理任务取消掉*/
          leakTask.cancel();
 
          try {
@@ -251,6 +253,7 @@ public abstract class ProxyConnection implements Connection
             }
 
             if (dirtyBits != 0) {
+               /*将poolEntry的状态充值*/
                poolEntry.resetConnectionState(this, dirtyBits);
             }
 
@@ -263,7 +266,9 @@ public abstract class ProxyConnection implements Connection
             }
          }
          finally {
+            /*即将当前的delegate代理类状态设置为固定的已关闭的链接*/
             delegate = ClosedConnection.CLOSED_CONNECTION;
+            /*复用poolEntry，再次将poolEntry实例放回对象连接池中复用*/
             poolEntry.recycle();
          }
       }

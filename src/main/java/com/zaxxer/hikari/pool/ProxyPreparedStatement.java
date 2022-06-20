@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * 代理的PreparedStatement
  * This is the proxy class for java.sql.PreparedStatement.
  *
  * @author Brett Wooldridge

@@ -47,6 +47,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
+ * 数据库连接池的主类
+ *
  * This is the primary connection pool class that provides the basic
  * pooling behavior for HikariCP.
  *
@@ -73,6 +75,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
    private final ThreadPoolExecutor addConnectionExecutor;
    private final ThreadPoolExecutor closeConnectionExecutor;
 
+   /*连接的对象池*/
    private final ConcurrentBag<PoolEntry> connectionBag;
 
    private final ProxyLeakTaskFactory leakTaskFactory;
@@ -93,6 +96,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
       this.connectionBag = new ConcurrentBag<>(this);
       this.suspendResumeLock = config.isAllowPoolSuspension() ? new SuspendResumeLock() : SuspendResumeLock.FAUX_LOCK;
 
+      /*初始化管家连接池，用来管理连接*/
       this.houseKeepingExecutorService = initializeHouseKeepingExecutorService();
 
       checkFailFast();
@@ -112,7 +116,9 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
 
       final int maxPoolSize = config.getMaximumPoolSize();
       LinkedBlockingQueue<Runnable> addConnectionQueue = new LinkedBlockingQueue<>(maxPoolSize);
+      /*单线程池专门用来增加数据库连接*/
       this.addConnectionExecutor = createThreadPoolExecutor(addConnectionQueue, poolName + " connection adder", threadFactory, new CustomDiscardPolicy());
+      /*单线程池专门用来关闭连接*/
       this.closeConnectionExecutor = createThreadPoolExecutor(maxPoolSize, poolName + " connection closer", threadFactory, new ThreadPoolExecutor.CallerRunsPolicy());
 
       this.leakTaskFactory = new ProxyLeakTaskFactory(config.getLeakDetectionThreshold(), houseKeepingExecutorService);
@@ -120,6 +126,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
       this.houseKeeperTask = houseKeepingExecutorService.scheduleWithFixedDelay(new HouseKeeper(), 100L, housekeepingPeriodMs, MILLISECONDS);
 
       if (Boolean.getBoolean("com.zaxxer.hikari.blockUntilFilled") && config.getInitializationFailTimeout() > 1) {
+         /*动态调整添加连接的线程池的大小*/
          addConnectionExecutor.setMaximumPoolSize(Math.min(16, Runtime.getRuntime().availableProcessors()));
          addConnectionExecutor.setCorePoolSize(Math.min(16, Runtime.getRuntime().availableProcessors()));
 
@@ -128,12 +135,15 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
             quietlySleep(MILLISECONDS.toMillis(100));
          }
 
+         /*恢复线程池大小*/
          addConnectionExecutor.setCorePoolSize(1);
          addConnectionExecutor.setMaximumPoolSize(1);
       }
    }
 
    /**
+    * 从连接池里获取新连接
+    *
     * Get a connection from the pool, or timeout after connectionTimeout milliseconds.
     *
     * @return a java.sql.Connection instance
@@ -153,18 +163,21 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
     */
    public Connection getConnection(final long hardTimeout) throws SQLException
    {
+      /*先加锁获取连接*/
       suspendResumeLock.acquire();
       final var startTime = currentTime();
 
       try {
          var timeout = hardTimeout;
          do {
+            /*从连接池里借出连接实例*/
             var poolEntry = connectionBag.borrow(timeout, MILLISECONDS);
             if (poolEntry == null) {
                break; // We timed out... break and throw exception
             }
 
             final var now = currentTime();
+            /*已经标记为被逐出或者连接已死亡的，直接关闭连接*/
             if (poolEntry.isMarkedEvicted() || (elapsedMillis(poolEntry.lastAccessed, now) > aliveBypassWindowMs && isConnectionDead(poolEntry.connection))) {
                closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? EVICTED_CONNECTION_MESSAGE : DEAD_CONNECTION_MESSAGE);
                timeout = hardTimeout - elapsedMillis(startTime);
@@ -429,6 +442,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
     */
    void closeConnection(final PoolEntry poolEntry, final String closureReason)
    {
+      /*从bag中移除连接*/
       if (connectionBag.remove(poolEntry)) {
          final var connection = poolEntry.close();
          closeConnectionExecutor.execute(() -> {
@@ -452,6 +466,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
    // ***********************************************************************
 
    /**
+    * 创建新的poolEntry
     * Creating new poolEntry.  If maxLifetime is configured, create a future End-of-life task with 2.5% variance from
     * the maxLifetime time to ensure there is no massive die-off of Connections in the pool.
     */
@@ -719,6 +734,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
          var added = false;
          try {
             while (shouldContinueCreating()) {
+               /*创建连接对象，用于添加到对象池中维护连接池*/
                final var poolEntry = createPoolEntry();
                if (poolEntry != null) {
                   added = true;
@@ -758,6 +774,7 @@ public final class HikariPool extends PoolBase implements HikariPoolMXBean, IBag
    }
 
    /**
+    * 连接池管家，用来管理最小空闲连接
     * The house keeping task to retire and maintain minimum idle connections.
     */
    private final class HouseKeeper implements Runnable

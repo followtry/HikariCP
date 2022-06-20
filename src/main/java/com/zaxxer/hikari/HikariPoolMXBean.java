@@ -19,6 +19,8 @@ package com.zaxxer.hikari;
 import javax.sql.DataSource;
 
 /**
+ * 接口
+ *
  * The javax.management MBean for a Hikari pool instance.
  *
  * @author Brett Wooldridge

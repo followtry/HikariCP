@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
+ * 代理的Statement
  * This is the proxy class for java.sql.Statement.
  *
  * @author Brett Wooldridge

@@ -177,6 +177,7 @@ public class ConcurrentBag<T extends IConcurrentBagEntry> implements AutoCloseab
       bagEntry.setState(STATE_NOT_IN_USE);
 
       for (var i = 0; waiters.get() > 0; i++) {
+         /*将bagEntry继续放入handoffQueue队列中，或者如果是在使用状态或已移除等状态则直接返回*/
          if (bagEntry.getState() != STATE_NOT_IN_USE || handoffQueue.offer(bagEntry)) {
             return;
          }
